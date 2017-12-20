@@ -12,7 +12,12 @@ module Parsedata
 
   def removepunctuation text
     return if text == nil
-    text.gsub!(/[^\nA-Za-z0-9 ]/,'')
+    text.gsub(/[^\nA-Za-z0-9 ]/,'')
+  end
+
+  def tokenizeclean text
+    text = removepunctuation(text).downcase
+    text.split.select{ |w| !STOPWORDS.include?(w) }
   end
 
   def readcsvtohash filename
@@ -30,14 +35,12 @@ module Parsedata
           # unknown category?! CSV fukup?
           raise ArgumentError
         end
-        removepunctuation title
-        title.downcase!
 
         # increase category count
         counts[category] += 1
 
         # word count
-        title.split.select{ |w| !STOPWORDS.include?(w)}.each do |word|
+        tokenizeclean(title).each do |word|
           if !words.include? category
             words[category] = Hash.new(0)
             # puts "new category #{category}" if DEBUG == 1

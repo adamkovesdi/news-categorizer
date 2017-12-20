@@ -4,4 +4,13 @@
 require './parsedata'
 include Parsedata
 
-readcsvtohash '/home/adamkov/Desktop/uci-news-aggregator.csv'
+wordfrequency = readcsvtohash '/home/adamkov/Desktop/uci-news-aggregator.csv'
+
+puts "Let me categorize your sentence (type quit or Ctrl+D to exit)"
+input = ''
+loop do
+  print "> "
+  input = $stdin.gets
+  break if input == nil || input.chomp == "quit"
+  puts tokenizeclean(input)
+end
