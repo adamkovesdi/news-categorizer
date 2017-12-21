@@ -1,0 +1,6 @@
+require "./parsedata"
+include Parsedata
+require "./newscategorizer"
+include NewsCategorizer
+w = readcsvtohash "uci-news-aggregator.csv"
+

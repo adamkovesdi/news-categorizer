@@ -1,3 +1,4 @@
+#!/usr/bin/env/ruby
 require 'rss'
 
 feed_urls = [ "http://feeds.bbci.co.uk/news/business/rss.xml", "http://feeds.bbci.co.uk/news/politics/rss.xml", "http://feeds.bbci.co.uk/sport/football/rss.xml?edition=int" ]
