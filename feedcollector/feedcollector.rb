@@ -1,8 +1,6 @@
 #!/usr/bin/env ruby
-# vim: ai ts=2 sts=2 et sw=2 ft=ruby
-# vim: autoindent tabstop=2 shiftwidth=2 expandtab softtabstop=2 filetype=ruby
-
-# Feed collector application
+#
+# Feed collector application by Adam Kovesdi (c) 2017
 require 'rss'
 require 'date'
 require './feedparser'
@@ -11,42 +9,96 @@ SLEEPTIME = 900
 URLFILE = 'feedurl.txt'.freeze
 LASTDATEFILE = 'lastdate.txt'.freeze
 OUTPUTFILE = 'output.txt'.freeze
-CATEGORIES = %w[business education entertainment_arts football health politics science_environment technology].freeze
+CATEGORIES = Dir.entries('data').reject { |e| e[0] == '.' }
 
-feeds = CATEGORIES.map { |d| 'data/' + d + "/#{URLFILE}" }
-lastdates = CATEGORIES.map { |d| 'data/' + d + "/#{LASTDATEFILE}" }
-outputfiles = CATEGORIES.map { |d| 'data/' + d + "/#{OUTPUTFILE}" }
+def debug_printfeeds(fileinfo = false)
+  CATEGORIES.each do |feed|
+    print feed
+    print ' : '
+    puts getfeedurl feed
+    next unless fileinfo
+    puts 'data/' + feed + "/#{URLFILE}"
+    puts lastdatefile feed
+    puts outputfile feed
+  end
+end
 
-loop do
-  feeds.each_with_index do |url, index|
-    t = IO.read(File.join(File.dirname(__FILE__), url)).chomp
-    print "Parsing feed category #{CATEGORIES[index]} ... "
-    count = 0
-    entries = Feedparser.parsefeed(t)
-    if File.file?(lastdates[index])
-      lastupdate = Time.rfc2822(IO.read(File.join(File.dirname(__FILE__), lastdates[index])).chomp)
-    else
-      lastupdate = Time.new(1979, 1, 1)
+def getfeedurl(feed)
+  urlfile = 'data/' + feed + "/#{URLFILE}"
+  IO.read(File.join(File.dirname(__FILE__), urlfile)).chomp
+end
+
+def lastdatefile(feed)
+  'data/' + feed + "/#{LASTDATEFILE}"
+end
+
+def outputfile(feed)
+  'data/' + feed + "/#{OUTPUTFILE}"
+end
+
+def updatelastdatefile(feed, updatedate)
+  # updates last update file with the given date/time
+  filename = lastdatefile(feed)
+  f = File.open(filename, 'w')
+  f.puts(updatedate)
+  f.close
+end
+
+def getlastupdate(feed)
+  # returns time object of last update
+  lastupdate = Time.new(1979, 1, 1)
+  datefile = lastdatefile(feed)
+  if File.file?(datefile)
+    datestring = IO.read(File.join(File.dirname(__FILE__), datefile)).chomp
+    lastupdate = Time.rfc2822(datestring)
+  end
+  lastupdate
+end
+
+def writenewer(file, entries, lastupdate)
+  count = 0
+  entries.each do |e|
+    if e['date'] > lastupdate
+      file.puts(e.values[0..-1].join('|'))
+      count += 1
     end
-    f = File
-    if File.file?(outputfiles[index])
-      f = File.open(outputfiles[index], 'a')
-    else
-      f = File.open(outputfiles[index], 'w')
-    end
-    entries.each do |e|
-      if e['date'] > lastupdate
-        f.puts(e.values[1..-1].join('|'))
-        count += 1
-      end
-    end
-    f.close
-    # Update last date files
-    f = File.open(lastdates[index], 'w')
-    f.puts(Feedparser.newestdate(entries))
-    f.close
+  end
+  count
+end
+
+def dofeed(feed)
+  entries = Feedparser.parsefeed(getfeedurl(feed))
+  lastupdate = getlastupdate(feed)
+  f = File.open(outputfile(feed), 'a')
+  count = writenewer(f, entries, lastupdate)
+  f.close
+  lastupdate = Feedparser.newestdate(entries)
+  updatelastdatefile(feed, lastupdate)
+  count
+end
+
+def doallfeeds
+  CATEGORIES.each do |feed|
+    print "Parsing feed #{feed} ... "
+    count = dofeed(feed)
     puts count
   end
-  puts "#{Time.now} Sleeping for #{SLEEPTIME}"
-  sleep(SLEEPTIME)
 end
+
+def cyclic_feedparse
+  loop do
+    puts "#{Time.now} Running feed collection"
+    doallfeeds
+    puts "#{Time.now} Sleeping for #{SLEEPTIME}"
+    sleep(SLEEPTIME)
+  end
+end
+
+def interactive
+  cyclic_feedparse
+rescue Interrupt
+  puts 'Stopping on interrupt'
+  exit(0)
+end
+
+interactive
