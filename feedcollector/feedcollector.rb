@@ -55,18 +55,23 @@ def getlastupdate(feed)
   lastupdate
 end
 
-def dofeed(feed)
+def writenewer(file, entries, lastupdate)
   count = 0
-  entries = Feedparser.parsefeed(getfeedurl(feed))
-  lastupdate = getlastupdate(feed)
-  File.open(outputfile(feed), 'a') do |f|
-    entries.each do |e|
-      if e['date'] > lastupdate
-        f.puts(e.values[0..-1].join('|'))
-        count += 1
-      end
+  entries.each do |e|
+    if e['date'] > lastupdate
+      file.puts(e.values[0..-1].join('|'))
+      count += 1
     end
   end
+  count
+end
+
+def dofeed(feed)
+  entries = Feedparser.parsefeed(getfeedurl(feed))
+  lastupdate = getlastupdate(feed)
+  f = File.open(outputfile(feed), 'a')
+  count = writenewer(f, entries, lastupdate)
+  f.close
   lastupdate = Feedparser.newestdate(entries)
   updatelastdatefile(feed, lastupdate)
   count
@@ -76,13 +81,24 @@ def doallfeeds
   CATEGORIES.each do |feed|
     print "Parsing feed #{feed} ... "
     count = dofeed(feed)
-    puts "#{count}"
+    puts count
   end
 end
 
-doallfeeds
+def cyclic_feedparse
+  loop do
+    puts "#{Time.now} Running feed collection"
+    doallfeeds
+    puts "#{Time.now} Sleeping for #{SLEEPTIME}"
+    sleep(SLEEPTIME)
+  end
+end
 
-# loop do
-# puts "#{Time.now} Sleeping for #{SLEEPTIME}"
-# sleep(SLEEPTIME)
-# end
+def interactive
+  cyclic_feedparse
+rescue Interrupt
+  puts 'Stopping on interrupt'
+  exit(0)
+end
+
+interactive
