@@ -3,24 +3,27 @@
 # Feed collector application by Adam Kovesdi (c) 2017
 require 'rss'
 require 'date'
+require 'logger'
 require './feedparser'
 
-SLEEPTIME = 900
+SLEEPTIME = 1800
 URLFILE = 'feedurl.txt'.freeze
 LASTDATEFILE = 'lastdate.txt'.freeze
 OUTPUTFILE = 'output.txt'.freeze
 CATEGORIES = Dir.entries('data').reject { |e| e[0] == '.' }
+OUTPUTLOG = Logger.new('feedparser.log')
+# OUTPUTLOG = Logger.new(STDOUT)
 
-def debug_printfeeds(fileinfo = false)
-  CATEGORIES.each do |feed|
-    print feed
-    print ' : '
-    puts getfeedurl feed
-    next unless fileinfo
-    puts 'data/' + feed + "/#{URLFILE}"
-    puts lastdatefile feed
-    puts outputfile feed
-  end
+def log(text)
+  OUTPUTLOG.info(text)
+end
+
+def error(text)
+  OUTPUTLOG.error(text)
+end
+
+def fatal(text)
+  OUTPUTLOG.fatal(text)
 end
 
 def getfeedurl(feed)
@@ -78,18 +81,19 @@ def dofeed(feed)
 end
 
 def doallfeeds
+  out = 'Parsing'
   CATEGORIES.each do |feed|
-    print "Parsing feed #{feed} ... "
+    out += " #{feed[0..1]} "
     count = dofeed(feed)
-    puts count
+    out += count.to_s
   end
+  log(out)
 end
 
 def cyclic_feedparse
+  log('Starting feed collection')
   loop do
-    puts "#{Time.now} Running feed collection"
     doallfeeds
-    puts "#{Time.now} Sleeping for #{SLEEPTIME}"
     sleep(SLEEPTIME)
   end
 end
@@ -97,7 +101,7 @@ end
 def interactive
   cyclic_feedparse
 rescue Interrupt
-  puts 'Stopping on interrupt'
+  fatal('Stopping on interrupt')
   exit(0)
 end
 
