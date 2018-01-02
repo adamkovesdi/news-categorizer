@@ -105,21 +105,21 @@ rescue Interrupt
   exit(0)
 end
 
-def detachterminal
+def daemon
   $stdin.reopen('/dev/null')
   $stdout.reopen('/tmp/feedcollectorout.txt', 'a')
   $stderr.reopen('/tmp/feedcollectorout.txt', 'a')
+  begin
+    cyclic_feedparse
+  rescue SignalException
+    fatal('Stopping on signal')
+    exit(0)
+  end
 end
 
 def daemonize
   pid = fork do
-    begin
-      detachterminal
-      cyclic_feedparse
-    rescue SignalException
-      fatal('Stopping on signal')
-      exit(0)
-    end
+    daemon
   end
   puts "Feedcollector daemon pid is #{pid}"
   Process.detach pid
