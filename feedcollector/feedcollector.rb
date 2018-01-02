@@ -105,4 +105,24 @@ rescue Interrupt
   exit(0)
 end
 
-interactive
+def detachterminal
+  $stdin.reopen('/dev/null')
+  $stdout.reopen('/tmp/feedcollectorout.txt', 'a')
+  $stderr.reopen('/tmp/feedcollectorout.txt', 'a')
+end
+
+def daemonize
+  pid = fork do
+    begin
+      detachterminal
+      cyclic_feedparse
+    rescue SignalException
+      fatal('Stopping on signal')
+      exit(0)
+    end
+  end
+  puts "Feedcollector daemon pid is #{pid}"
+  Process.detach pid
+end
+
+daemonize
