@@ -11,7 +11,7 @@ URLFILE = 'feedurl.txt'.freeze
 LASTDATEFILE = 'lastdate.txt'.freeze
 OUTPUTFILE = 'output.txt'.freeze
 CATEGORIES = Dir.entries('data').reject { |e| e[0] == '.' }
-OUTPUTLOG = Logger.new('feedparser.log')
+OUTPUTLOG = Logger.new('feedcollector.log')
 # OUTPUTLOG = Logger.new(STDOUT)
 
 def log(text)
