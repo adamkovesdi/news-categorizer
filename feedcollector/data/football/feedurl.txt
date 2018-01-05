@@ -1,1 +1,0 @@
-http://feeds.bbci.co.uk/sport/football/rss.xml?edition=int
