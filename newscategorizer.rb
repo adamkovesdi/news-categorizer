@@ -26,9 +26,9 @@ module NewsCategorizer
     puts 'Brain initialization complete'
     puts 'Let me try to categorize your sentence (type quit or Ctrl+D to exit)'
     loop do
-      input = readline
-      break if input.nil? || input.chomp == 'quit'
-      next if input.chomp == ''
+      input = readline.chomp
+      break if input == 'quit'
+      next if input == ''
       prob = countprobabilities(input, wordfrequency)
       print 'Highest probability: ' +  prob.max_by { |_k, v| v }[0].to_s
       puts ' probability dump: ' + prob.to_s
